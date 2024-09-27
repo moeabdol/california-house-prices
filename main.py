@@ -38,8 +38,12 @@ housing_df["income_cat"] = pd.cut(
 housing_df["income_cat"].hist()
 plt.show()
 
-
+# Perform stratified sampling
 split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 for train_index, test_index in split.split(housing_df, housing_df["income_cat"]):
     strat_train_set = housing_df.loc[train_index]
     strat_test_set = housing_df.loc[test_index]
+
+# Remove income_cat
+for set_ in (strat_train_set, strat_test_set):
+    set_.drop("income_cat", axis=1, inplace=True)
