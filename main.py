@@ -1,6 +1,7 @@
 # coding: utf-8
 import os
 import pandas as pd
+from pandas.plotting import scatter_matrix
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 import numpy as np
@@ -115,3 +116,18 @@ cbar.set_label('Median House Value', fontsize=16)
 
 plt.legend(fontsize=16)
 save_fig("scatterplot_4")
+
+# Calculate correlations
+corr_matrix = housing_df.corr(numeric_only=True)
+corr_matrix["median_house_value"].sort_values(ascending=False)
+
+# Calculate correlations using pandas scatter_matrix
+attributes = ["median_house_value", "median_income", "total_rooms",
+              "housing_median_age"]
+scatter_matrix(housing_df[attributes], figsize=(12, 8))
+save_fig("correlation_scatter_matrix")
+
+# Zoom in correlation between median_house_value and median_income
+housing_df.plot(kind="scatter", x="median_income", y="median_house_value",
+                alpha=0.1)
+save_fig("income_vs_house_value_correlation")
