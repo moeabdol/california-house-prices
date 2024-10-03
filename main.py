@@ -131,3 +131,11 @@ save_fig("correlation_scatter_matrix")
 housing_df.plot(kind="scatter", x="median_income", y="median_house_value",
                 alpha=0.1)
 save_fig("income_vs_house_value_correlation")
+
+# Attribute combinations
+housing_df["rooms_per_household"] = housing_df["total_rooms"] / housing_df["households"]
+housing_df["bedrooms_per_room"] = housing_df["total_bedrooms"] / housing_df["total_rooms"]
+housing_df["population_per_household"] = housing_df["population"] / housing_df["households"]
+
+corr_matrix = housing_df.corr(numeric_only=True)
+corr_matrix["median_house_value"].sort_values(ascending=False)
