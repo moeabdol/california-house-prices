@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as img
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.impute import SimpleImputer
 
 # Function to save figures
 def save_fig(fig_id, tight_layout=True, fig_extension="webp", resolution=300):
@@ -139,3 +140,25 @@ housing_df["population_per_household"] = housing_df["population"] / housing_df["
 
 corr_matrix = housing_df.corr(numeric_only=True)
 corr_matrix["median_house_value"].sort_values(ascending=False)
+
+# Prepare a clean training set and separate labels
+housing_df = strat_train_set.drop("median_house_value", axis=1)
+housing_labels = strat_train_set["median_house_value"].copy()
+
+# Data cleaning (manual)
+# option 1
+#  housing_df.dropna(subset=["total_bedrooms"])
+
+# option 2
+#  housing_df.drop("total_bedrooms", axis=1)
+
+# option 3
+#  median = housing_df["total_bedrooms"].median()
+#  housing_df["total_bedrooms"] = housing_df["total_bedrooms"].fillna(median)
+
+# Data cleaning (SimpleImputer)
+imputer = SimpleImputer(strategy="median")
+housing_num = housing_df.drop("ocean_proximity", axis=1)
+imputer.fit(housing_num)
+X = imputer.transform(housing_num)
+housing_df = pd.DataFrame(X, columns=housing_num.columns, index=housing_num.index)
