@@ -7,6 +7,7 @@ import matplotlib.image as img
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 
 # Function to save figures
 def save_fig(fig_id, tight_layout=True, fig_extension="webp", resolution=300):
@@ -162,3 +163,17 @@ housing_num = housing_df.drop("ocean_proximity", axis=1)
 imputer.fit(housing_num)
 X = imputer.transform(housing_num)
 housing_df = pd.DataFrame(X, columns=housing_num.columns, index=housing_num.index)
+
+# First 10 instances of ocean_proximity
+housing_cat = strat_train_set[["ocean_proximity"]]
+housing_cat.head(10)
+
+# Encode ocean proximity using ordinal encoder
+ordinal_encoder = OrdinalEncoder()
+housing_cat_encoded = ordinal_encoder.fit_transform(housing_cat)
+housing_cat_encoded[:10]
+
+# One hot encoder for ocean proximity
+cat_encoder = OneHotEncoder()
+housing_cat_1hot = cat_encoder.fit_transform(housing_cat)
+housing_cat_1hot
