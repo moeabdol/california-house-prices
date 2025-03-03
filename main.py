@@ -1,13 +1,16 @@
 # coding: utf-8
 import os
+
+import matplotlib.image as img
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from pandas.plotting import scatter_matrix
-import matplotlib.pyplot as plt
-import matplotlib.image as img
-import numpy as np
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
+
 
 # Function to save figures
 def save_fig(fig_id, tight_layout=True, fig_extension="webp", resolution=300):
@@ -16,6 +19,7 @@ def save_fig(fig_id, tight_layout=True, fig_extension="webp", resolution=300):
     if tight_layout:
         plt.tight_layout()
     plt.savefig(path, format=fig_extension, dpi=resolution)
+
 
 # Data path
 HOUSING_PATH = os.path.join("data", "housing.csv")
@@ -43,9 +47,9 @@ save_fig("median_income_histogram")
 
 # Create income category attribute
 housing_df["income_cat"] = pd.cut(
-            housing_df["median_income"],
-            bins=[0., 1.5, 3.0, 4.5, 6., np.inf],
-            labels=[1, 2, 3, 4, 5]
+    housing_df["median_income"],
+    bins=[0.0, 1.5, 3.0, 4.5, 6.0, np.inf],
+    labels=[1, 2, 3, 4, 5],
 )
 housing_df["income_cat"].hist()
 save_fig("income_cat_histograms")
@@ -77,10 +81,10 @@ housing_df.plot(
     x="longitude",
     y="latitude",
     alpha=0.4,
-    s=housing_df["population"]/100,     # Marker size
-    c="median_house_value",             # Marker color
+    s=housing_df["population"] / 100,  # Marker size
+    c="median_house_value",  # Marker color
     label="population",
-    cmap=plt.get_cmap("jet"),           # Colormap
+    cmap=plt.get_cmap("jet"),  # Colormap
     colorbar=True,
     figsize=(10, 7),
 )
@@ -94,10 +98,10 @@ housing_df.plot(
     x="longitude",
     y="latitude",
     alpha=0.4,
-    s=housing_df["population"]/100,     # Marker size
-    c="median_house_value",             # Marker color
+    s=housing_df["population"] / 100,  # Marker size
+    c="median_house_value",  # Marker color
     label="Population",
-    cmap=plt.get_cmap("jet"),           # Colormap
+    cmap=plt.get_cmap("jet"),  # Colormap
     colorbar=False,
     figsize=(10, 7),
 )
@@ -112,9 +116,9 @@ plt.xlabel("Longitude", fontsize=14)
 
 prices = housing_df["median_house_value"]
 tick_values = np.linspace(prices.min(), prices.max(), 11)
-cbar = plt.colorbar(ticks=tick_values/prices.max())
-cbar.ax.set_yticklabels(["$%dk"%(round(v/1000)) for v in tick_values], fontsize=14)
-cbar.set_label('Median House Value', fontsize=16)
+cbar = plt.colorbar(ticks=tick_values / prices.max())
+cbar.ax.set_yticklabels(["$%dk" % (round(v / 1000)) for v in tick_values], fontsize=14)
+cbar.set_label("Median House Value", fontsize=16)
 
 plt.legend(fontsize=16)
 save_fig("scatterplot_4")
@@ -124,20 +128,27 @@ corr_matrix = housing_df.corr(numeric_only=True)
 corr_matrix["median_house_value"].sort_values(ascending=False)
 
 # Calculate correlations using pandas scatter_matrix
-attributes = ["median_house_value", "median_income", "total_rooms",
-              "housing_median_age"]
+attributes = [
+    "median_house_value",
+    "median_income",
+    "total_rooms",
+    "housing_median_age",
+]
 scatter_matrix(housing_df[attributes], figsize=(12, 8))
 save_fig("correlation_scatter_matrix")
 
 # Zoom in correlation between median_house_value and median_income
-housing_df.plot(kind="scatter", x="median_income", y="median_house_value",
-                alpha=0.1)
+housing_df.plot(kind="scatter", x="median_income", y="median_house_value", alpha=0.1)
 save_fig("income_vs_house_value_correlation")
 
 # Attribute combinations
 housing_df["rooms_per_household"] = housing_df["total_rooms"] / housing_df["households"]
-housing_df["bedrooms_per_room"] = housing_df["total_bedrooms"] / housing_df["total_rooms"]
-housing_df["population_per_household"] = housing_df["population"] / housing_df["households"]
+housing_df["bedrooms_per_room"] = (
+    housing_df["total_bedrooms"] / housing_df["total_rooms"]
+)
+housing_df["population_per_household"] = (
+    housing_df["population"] / housing_df["households"]
+)
 
 corr_matrix = housing_df.corr(numeric_only=True)
 corr_matrix["median_house_value"].sort_values(ascending=False)
@@ -171,9 +182,34 @@ housing_cat.head(10)
 # Encode ocean proximity using ordinal encoder
 ordinal_encoder = OrdinalEncoder()
 housing_cat_encoded = ordinal_encoder.fit_transform(housing_cat)
-housing_cat_encoded[:10]
+# housing_cat_encoded[:10]
 
 # One hot encoder for ocean proximity
 cat_encoder = OneHotEncoder()
 housing_cat_1hot = cat_encoder.fit_transform(housing_cat)
-housing_cat_1hot
+# housing_cat_1hot
+
+# Custom transformer (example)
+rooms_ix, bedrooms_ix, population_ix, households_ix = 3, 4, 5, 6
+
+
+class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
+    def __init__(self, add_bedrooms_per_room=True):  # no *args or **kargs
+        self.add_bedrooms_per_room = add_bedrooms_per_room
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        rooms_per_household = X[:, rooms_ix] / X[:, households_ix]
+        population_per_household = X[:, population_ix] / X[:, households_ix]
+        if self.add_bedrooms_per_room:
+            bedrooms_per_room = X[:, bedrooms_ix] / X[:, rooms_ix]
+            return np.c_[
+                X, rooms_per_household, population_per_household, bedrooms_per_room
+            ]
+        return np.c_[X, rooms_per_household, population_per_household]
+
+
+attr_adder = CombinedAttributesAdder(add_bedrooms_per_room=False)
+housing_extra_attribs = attr_adder.transform(housing_df.values)
